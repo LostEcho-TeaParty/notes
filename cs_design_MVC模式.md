@@ -55,3 +55,9 @@ thinkPHP 框架里面有渲染器，即使没有，PHP 也可以直接在 html �
 在这个系统中有使用数据库来存储数据，thinkPHP 有提供一些抽象来让我非常方便的操作数据库。首先要编写好 `xxModel.class.php`，在该类中提供需要使用数据库的方法，如`getImages($data = array())`、`getImageById($id)`，在这些方法的实现中具体操作数据库，不将数据库具体操作方法暴露出来，在 Controller 的 action 中，可以使用上面提到的方法。
 
 ### 订单管理系统
+
+## 在 java swing 中的使用
+写这篇文档的目的就是想要去探索一下在 java swing 中实现 MVC 的方法。在桌面 GUI 上只有 swing 用的稍稍多一点，写过几个小的作业，但是每次使用的时候，都会发现很难利用好 MVC 模式，action 与 页面总是难以分开，数据不知道在类之间传递。总之，每次用 swing 写的小软件都让我感觉很不好。
+但为什么还要使用 swing、使用 java 来写 GUI 呢？因为 java 的跨平台性我真的是太喜欢了，因为我喜欢使用不同的操作系统，当我发现一些 java 软件可以毫无差别的运行在各个系统上时，我感觉到非常的方便。并且我慢慢发现我喜欢的一些软件同样是用 java swing 编写的，我又再次心动了。我想再次把 swing 用起来，那我就需要解决软件框架的问题，我需要把软件开发的各个功能以可重复的流程进行下去，这样我才能开心的用下去。
+
+在描写工作模式之前，当然还是再回顾一下 swing 的结构，参考的是 [A Swing Architecture Overview](https://td4rqw.blu.livefilestore.com/y1mhJLM6NoC4uepo74L-qQPJyc2DE61FqackhuLH4HBQDd8BhzbvC_CsZlsFlXTL5OoD7RYQ6ESMQJgJS1D1yt_Hinz7xJ16QGSdlnDTbDbv-kGTxLEDiVkeDejnNmjEtiij32H2-asBm9Kam-2q5iv4A/Swing%20Architecture%20Overview.mht)，这篇文档在被迁移到 oracle 后就没有图片了，所以还是看原版的备份吧。
