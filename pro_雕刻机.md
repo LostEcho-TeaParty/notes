@@ -15,9 +15,11 @@
 当我最终放弃去破解协议后，我把手又伸向了互联网，看看有没有什么开源软件能够直接满足我的需求，然后果然就发现了一些，真是不得不说，这些开源软件的贡献者真的是人类之光，真的希望有一天我的实力也足够强，能够加入他们，也成为开源世界出一份力。
 + [LaserGRBL](https://lasergrbl.com/)：开源的激光雕刻机的上位机，是用 c# 编写的，所以最好还是运行在 windows 系统上，但是借助 mono 应该也可以运行在 linux 上，具体可以参考这篇讨论，[Run on Linux/Mono](https://github.com/arkypita/LaserGRBL/discussions/1764)，并且在最后有人成功做了移植，给出了编译好的二进制包，参考该 [fork](https://github.com/hovercraft-github/LaserGRBL-MP/tree/v6.2.2-mono6.12.0.200)，相关修改被提到了`linux-port`分支上。
 该软件是针对于 [grbl](https://github.com/gnea/grbl) 固件。目前我还没有让 LaserGRBL 与 grblHAL 成功连接上。
++ [Marlin](https://marlinfw.org/)
++ [LaserWeb](https://laserweb.yurl.ch/)
 + [grbl](https://github.com/gnea/grbl)
 + [grblHAL](https://github.com/grblHAL)
-+ [Marlin](https://marlinfw.org/)
+
 
 ## 硬件
 
@@ -37,20 +39,71 @@
 
 ### 驱动
 
-#### HR4988
+#### A4988 / HR4988
 原厂单板上的步进电机驱动为 [HR4988](http://www.szczkjgs.com/UploadFiles/fujian/3721/HR4988.pdf)，应该是 [A4988](https://www.allegromicro.com/-/media/files/datasheets/a4988-datasheet.pdf) 的高精度版本，因为 A4988 最高支持 16 微步细分，而 HR4988 最高可以支持到 128 微步细分，目前在淘宝上可以买到的驱动应该都是 HR4988 而不是 A4988 了，从数据手册上来看 HR4988 是国产的，应该会便宜点。A4988 是 ALLEGRO 的芯片，真没有想到是这家公司出的，上回听说这个公司产的芯片还是霍尔电流传感器。真正使用上还是买现成的模块，这个已经非常成熟了，基本上看到这个红色的小模块，就可以确定是这个驱动。
 <div align="center">
     <img src="./images/HR4988.jpg" width=600px>
 </div>
 
-考虑到 HR4988 与 A4988 完全兼容，模块的引脚也完全一致，所以教程基本上是可以通用的。
+考虑到 HR4988 与 A4988 完全兼容，模块的引脚也完全一致，所以教程基本上是可以通用的。其模块接口如下图：
+<div align="center">
+    <img src="./images/A4988_module.png" width=600px>
+    <p><a link="https://a.pololu-files.com/picture/0J3360.1200.png?d94ef1356fab28463db67ff0619afadf">图片来源</a></p>
+</div>
 
+接口可以简单分成功率部分与数字部分，功率部分包含电机供电与电机线圈接口。数字部分包含数字供电以及 IO 信号。
++ VMOT、GND：电机供电电源
++ 2B、2A：电机绕阻 2 引脚
++ 1A、1B：电机绕阻 1 引脚
++ VDD、GND：数字供电电源
++ ENABLEn：驱动使能引脚，低电平有效。只有当该脚电平为低时，电机驱动才会进行工作
++ MS1、MS2、MS3：驱动模式引脚，用于对步进细分进行控制，这里 A4988 支持 full、1/2、1/4、1/8、1/16 细分模式。而 HR4988 在此基础上拓展了 1/32、1/64、1/128 细分模式，并且模式设置完全兼容 A4988.
 
+A4988 模式配置
+
+| MS1 | MS2 | MS3 | Microstep Resolution |
+| --- | --- | --- | -------------------- |
+| L   | L   | L   | Full Step            |
+| H   | L   | L   | Half Step            |
+| L   | H   | L   | Quarter Step         |
+| H   | H   | L   | Eighth Step          |
+| H   | H   | H   | Sixteenth Step       |
+
+HR4988 模式配置
+
+| MS1 | MS2 | MS3 | Microstep Resolution |
+| --- | --- | --- | -------------------- |
+| L   | L   | L   | Full Step            |
+| H   | L   | L   | Half Step            |
+| L   | H   | L   | Quarter Step         |
+| H   | H   | L   | 1/8 Step             |
+| H   | H   | H   | 1/16 Step            |
+| H   | L   | H   | 1/32 Step            |
+| L   | H   | H   | 1/64 Step            |
+| L   | L   | H   | 1/128 Step           |
+
++ RESETn：复位引脚，低电平有效。当该引脚为低电平时，A4988 将复位。如果该引脚悬空，则A4988默认为高电平。
++ SLEEPn：睡眠引脚，低电平有效。不该引脚为低电平时，A4988 将进入低功耗睡眠模式。若无需使用 SLEEP 模式时，可以将 SLEEP 引脚与 RESET 引脚相连，此时 A4988 将一直保持在正常功耗模式下。
++ STEP：步进引脚。MCU 通过该引脚向 A4988 发送脉冲信号，A4988 接收到信号后，会根据细分配置来控制电机运转。
++ DIR：方向引脚。MCU 通过该引脚向 A4988 发送方向控制信号，当此引脚为低电平，A4988 将控制电机顺时针旋转。高电平则逆时针旋转。
+
+在正式使用该驱动之前，需要对电机绕阻的最大电流 ItripMAX 进行调节，如若不进行调节，驱动提供的电流可能大于绕阻所能承受的最大电流，从而导致电机损坏。调节该电流的方法是通过对芯片 VREF 脚上的电压进行调节，其大小还与电流采样电阻 Rs 有关。
+
+首先需要确定 Rs 的大小，上方实物图中，芯片左侧的两个较大电阻就是电流采样电阻 Rs，丝印上标明电阻大小为 R100，也即 0.1Ohm。而如何调节芯片 VREF 脚上的电压呢？可以通过调节模块上的滑动变阻器来进行调整。那么现在就可以根据以下公式调试 ItripMAX 的大小了。
+
+$$I_{tripMAX} = V_{REF} / (8 * R_S)$$
+
+根据公式，如果想要设置 ItripMAX 为 1A，那么就需要调节 VREF 脚上的电压为 1A * (8 * 0.1Ohm) = 0.8V。
 
 #### TMC2209
-这个驱动芯片是当时想在淘宝上购买 HR4988 时发现的，有很多家都在卖这个，附带一个大的蓝色散热片，广告上说是细分程度更高，但其实这个驱动芯片的价值并不只在于此。[TMC2209](https://www.analog.com/media/en/technical-documentation/data-sheets/tmc2209_datasheet_rev1.09.pdf) 的芯片手册上说它是极度安静的两相步进电机驱动，实际使用过程中，更安静也就意味着更小的电机抖动、更高的步进精度，实际使用上也是如此，加上之前对步进电机进行的串联处理，精度真的提高了非常多，在之后的调试记录中会体现出来：
+这个驱动芯片是当时想在淘宝上购买 HR4988 时发现的，有很多家都在卖这个，附带一个大的蓝色散热片，广告上说是细分程度更高，但其实这个驱动芯片的价值并不只在于此。[TMC2209](https://www.analog.com/media/en/technical-documentation/data-sheets/tmc2209_datasheet_rev1.09.pdf) 的芯片手册上说它是极度安静的两相步进电机驱动，实际使用过程中，更安静也就意味着更小的电机抖动、更高的步进精度，实际使用上也是如此，加上之前对步进电机进行的串联处理，精度真的提高了非常多，在之后的调试记录中会体现出来。
 
+<div align="center">
+    <img src="./images/TMC2209.jpg" width=600px>
+    <img src="./images/TMC2209_1.jpg" width=600px>
+</div>
 
+可能由于该驱动芯片并没有完全被 Arduino 开源社区接受，该驱动模块的样式与接口并没有统一，不同厂家之间的模块可能并不相同。并且，其模块接口与 A4988 模块并不完全兼容。
 
 ### 主控
 
