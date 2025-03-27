@@ -57,7 +57,7 @@
 + 1A、1B：电机绕阻 1 引脚
 + VDD、GND：数字供电电源
 + ENABLEn：驱动使能引脚，低电平有效。只有当该脚电平为低时，电机驱动才会进行工作
-+ MS1、MS2、MS3：驱动模式引脚，用于对步进细分进行控制，这里 A4988 支持 full、1/2、1/4、1/8、1/16 细分模式。而 HR4988 在此基础上拓展了 1/32、1/64、1/128 细分模式，并且模式设置完全兼容 A4988.
++ MS1、MS2、MS3：对微步分辨率进行控制，这里 A4988 支持 full、1/2、1/4、1/8、1/16 细分模式。而 HR4988 在此基础上拓展了 1/32、1/64、1/128 细分模式，并且模式设置完全兼容 A4988.
 
 A4988 模式配置
 
@@ -95,15 +95,75 @@ $$I_{tripMAX} = V_{REF} / (8 * R_S)$$
 
 根据公式，如果想要设置 ItripMAX 为 1A，那么就需要调节 VREF 脚上的电压为 1A * (8 * 0.1Ohm) = 0.8V。
 
+更多关于 A4988 模块的资料可以参考以下文章
++ [Pololu A4988 Stepper Motor Driver Carrier, Black Edition](https://www.tme.eu/Document/25459777e672c305e474897eef284f74/POLOLU-2128.pdf)
++ [A4988驱动NEMA步进电机(42步进电机)](http://www.taichi-maker.com/homepage/reference-index/motor-reference-index/arduino-a4988-nema-stepper-motor/)
+
 #### TMC2209
 这个驱动芯片是当时想在淘宝上购买 HR4988 时发现的，有很多家都在卖这个，附带一个大的蓝色散热片，广告上说是细分程度更高，但其实这个驱动芯片的价值并不只在于此。[TMC2209](https://www.analog.com/media/en/technical-documentation/data-sheets/tmc2209_datasheet_rev1.09.pdf) 的芯片手册上说它是极度安静的两相步进电机驱动，实际使用过程中，更安静也就意味着更小的电机抖动、更高的步进精度，实际使用上也是如此，加上之前对步进电机进行的串联处理，精度真的提高了非常多，在之后的调试记录中会体现出来。
+
+该芯片的部分参数如下：
++ 工作电压范围：4.75V – 28V
++ 每相最大电流：2A
++ 峰值输出电流：2.8 A
 
 <div align="center">
     <img src="./images/TMC2209.jpg" width=600px>
     <img src="./images/TMC2209_1.jpg" width=600px>
 </div>
 
-可能由于该驱动芯片并没有完全被 Arduino 开源社区接受，该驱动模块的样式与接口并没有统一，不同厂家之间的模块可能并不相同。并且，其模块接口与 A4988 模块并不完全兼容。
+可能由于该驱动芯片并没有完全被 Arduino 开源社区接受，该驱动模块的样式与接口并没有统一，不同厂家之间的模块可能并不相同。并且，其模块接口与 A4988 模块并不完全兼容。网店中有给基本的引脚说明，如下图：
+
+<div align="center">
+    <img src="./images/TMC2209_module_pin.jpg" width=400px>
+</div>
+
+在模块的左上角还有三个引脚，从左到右，从上到下分别为`VREF`、`DIAG`、`INDEX`。需要注意的是，其引脚分布与网上可以找到的模块是相同的，但是引脚名称却不尽相同。在网络上找到相关开源资料，发现与 [FYSETC-TMC2209 V3.1](https://github.com/FYSETC/FYSETC-TMC2209) 最为类似，如下图：
+
+<div align="center">
+    <img src="./images/FYSETC-TMC2209.png" width=600px>
+</div>
+
+该模块的引脚定义与我买的模块几乎一样，**除了左上角那三个引脚顺序存在差异**。通过该开源资料，我知道了该模块的原理图以及引脚功能说明。
+
+<div align="center">
+    <img src="./images/FYSETC-TMC2209-V3.1-sch.png" width=800px>
+</div>
+
++ VMOT、GND：电机供电电源
++ M1A、M1B：电机绕阻 1 引脚
++ M2B、M2A：电机绕阻 2 引脚
++ VDD、GND：数字供电电源
++ ENABLEn：驱动使能引脚，低电平有效。只有当该脚电平为低时，电机驱动才会进行工作
++ MS1、MS2：对微步分辨率进行控制，
+
+| MS1 | MS2 | Microstep Resolution |
+| --- | --- | -------------------- |
+| L   | H   | Half Step            |
+| H   | L   | Quarter Step         |
+| L   | L   | 1/8 Step             |
+| H   | H   | 1/16 Step            |
+
++ PDN、UART：连接到芯片 PDN_UART 引脚，可以通过跳接来控制模块引脚与芯片引脚是否相连。可以通过串口对驱动芯片进行配置。
++ CLK：时钟输入，可以直接接地使芯片使用内部时钟，或者可以提供外部时钟。
++ STEP：步进引脚。MCU 通过该引脚向 A4988 发送脉冲信号，A4988 接收到信号后，会根据细分配置来控制电机运转。
++ DIR：方向引脚。MCU 通过该引脚向 A4988 发送方向控制信号，当此引脚为低电平，A4988 将控制电机顺时针旋转。高电平则逆时针旋转。
++ DIAG：诊断和 StallGuard 输出，高电平表示检测到失速或驱动器错误，将 ENABLEn 信号拉高后可以重置错误状态。
++ INDEX：Configurable index output. Provides index pulse.
++ VREF：模拟参考电压，通过滑动变阻器分压得到。
+
+与 A4988 类似，该驱动芯片也可以通过设定 VREF 来设置电机电流 $I_{RMS}$，计算公式如下：
+$$I_{RMS}=\frac{325mV}{R_{SENCE}+20m\Omega}*\frac{1}{\sqrt{2}}*\frac{V_{REF}}{2.5V}$$
+
+通过观察模块上的电流采样电阻可以得知其阻值为 110Ohm，代入上述公式，可以简化为：
+$$I_{RMS}=\frac{1}{\sqrt{2}} * V_{REF}$$
+
+$$V_{REF}=\sqrt{2}*I_{RMS}=I_{MAX}$$
+如果需要设置 $I_{RMS}$ 为 1A，可以计算出 VREF 为 1.414V。使用万用表测量 VREF 引脚的电压，并小心调整滑动变阻器，使 VREF 引脚电压为设定值，就可以完成电机电流的设置。
+
+以上大概是 TMC2209 驱动独立运行模式的设置，然而该芯片还可以通过 UART 来进行配置，记录下资料以供之后研究。
++ [折腾3D打印机（2-2）步进电机驱动TMC2208](https://www.mydigit.cn/thread-107568-1-1.html)
++ [UART This! Serial Control of Stepper Motors With the TMC2208, Ramps 1.4 and Marlin](https://www.instructables.com/UART-This-Serial-Control-of-Stepper-Motors-With-th/)
 
 ### 主控
 
