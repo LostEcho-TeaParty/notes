@@ -153,9 +153,11 @@ $$I_{tripMAX} = V_{REF} / (8 * R_S)$$
 + VREF：模拟参考电压，通过滑动变阻器分压得到。
 
 与 A4988 类似，该驱动芯片也可以通过设定 VREF 来设置电机电流 $I_{RMS}$，计算公式如下：
+
 $$I_{RMS}=\frac{325mV}{R_{SENCE}+20m\Omega}*\frac{1}{\sqrt{2}}*\frac{V_{REF}}{2.5V}$$
 
 通过观察模块上的电流采样电阻可以得知其阻值为 110Ohm，代入上述公式，可以简化为：
+
 $$I_{RMS}=\frac{1}{\sqrt{2}} * V_{REF}$$
 
 $$V_{REF}=\sqrt{2}*I_{RMS}=I_{MAX}$$
