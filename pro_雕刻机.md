@@ -203,7 +203,7 @@ $$V_{REF}=\sqrt{2} \cdot I_{RMS}=I_{MAX}$$
     <img src="./images/cnc_shield_sch.png" width=800px>
     <p>Arduino CNC shield schematic</p>
     <img src="./images/cnc_shield_pcb.jpg" width=600px>
-    <p>LaserGRBL TEST PATTERN</p>
+    <p>Arduino CNC shield pcb</p>
 </div>
 
 根据视频中的教程与这里的原理图，就可以知道外围硬件默认的引脚了。当然也可以去查看 grbl 源码中的引脚配置部分。具体引脚接口如下：
@@ -232,7 +232,6 @@ $$V_{REF}=\sqrt{2} \cdot I_{RMS}=I_{MAX}$$
 整体安装好之后的图片如下：
 <div align="center">
     <img src="./images/laser_cut_final_assemble.jpg" width=800px>
-    <p>LaserGRBL TEST PATTERN</p>
 </div>
 
 增加了一个镭射开关，避免在调试过程中激光对眼睛的刺激。
