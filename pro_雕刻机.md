@@ -113,7 +113,7 @@ HR4988 模式配置
 
 首先需要确定 Rs 的大小，上方实物图中，芯片左侧的两个较大电阻就是电流采样电阻 Rs，丝印上标明电阻大小为 R100，也即 0.1Ohm。而如何调节芯片 VREF 脚上的电压呢？可以通过调节模块上的滑动变阻器来进行调整。那么现在就可以根据以下公式调试 ItripMAX 的大小了。
 
-$$I_{tripMAX} = V_{REF} / (8 * R_S)$$
+$$I_{tripMAX} = V_{REF} / (8 \cdot R_S)$$
 
 根据公式，如果想要设置 ItripMAX 为 1A，那么就需要调节 VREF 脚上的电压为 1A * (8 * 0.1Ohm) = 0.8V。
 
@@ -176,13 +176,14 @@ $$I_{tripMAX} = V_{REF} / (8 * R_S)$$
 
 与 A4988 类似，该驱动芯片也可以通过设定 VREF 来设置电机电流 $I_{RMS}$，计算公式如下：
 
-$$I_{RMS}=\frac{325mV}{R_{SENCE}+20m\Omega}*\frac{1}{\sqrt{2}}*\frac{V_{REF}}{2.5V}$$
+$$I_{RMS}=\frac{325mV}{R_{SENCE}+20m\Omega} \cdot \frac{1}{\sqrt{2}} \cdot \frac{V_{REF}}{2.5V}$$
 
 通过观察模块上的电流采样电阻可以得知其阻值为 110Ohm，代入上述公式，可以简化为：
 
-$$I_{RMS}=\frac{1}{\sqrt{2}} * V_{REF}$$
+$$I_{RMS}=\frac{1}{\sqrt{2}} \cdot V_{REF}$$
 
-$$V_{REF}=\sqrt{2}*I_{RMS}=I_{MAX}$$
+$$V_{REF}=\sqrt{2} \cdot I_{RMS}=I_{MAX}$$
+
 如果需要设置 $I_{RMS}$ 为 1A，可以计算出 VREF 为 1.414V。使用万用表测量 VREF 引脚的电压，并小心调整滑动变阻器，使 VREF 引脚电压为设定值，就可以完成电机电流的设置。
 
 以上大概是 TMC2209 驱动独立运行模式的设置，然而该芯片还可以通过 UART 来进行配置，记录下资料以供之后研究。
